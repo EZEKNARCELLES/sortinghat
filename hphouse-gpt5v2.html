@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Which Hogwarts House Do You Belong To? | Sorting Quiz (Unofficial)</title>
+<meta name="description" content="A fun, randomized personality quiz to discover your Hogwarts house. Includes visuals, icons, and a results page with explanations. Unofficial fan-made quiz."/>
+<style>
+  :root{
+    --bg-1:#0d0f17;
+    --bg-2:#121528;
+    --card:#171a2e;
+    --card-2:#1c2140;
+    --text:#eef1f7;
+    --muted:#aeb6d9;
+    --accent:#8aa1ff;
+    --accent-2:#c7d1ff;
+    --ok:#7ecb7e;
+    --warn:#ffcf66;
+
+    /* House palettes */
+    --gry-a:#c62828;  /* scarlet */
+    --gry-b:#ffb300;  /* gold */
+
+    --sly-a:#2e7d32;  /* emerald */
+    --sly-b:#b0bec5;  /* silver */
+
+    --rav-a:#1565c0;  /* blue */
+    --rav-b:#b87333;  /* bronze */
+
+    --huf-a:#f9a825;  /* yellow */
+    --huf-b:#2f2f2f;  /* charcoal */
+
+    /* Active theme (set at runtime on result) */
+    --theme-a: var(--accent);
+    --theme-b: var(--accent-2);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height:100%; }
+  body{
+    margin:0;
+    font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    color:var(--text);
+    background:
+      radial-gradient(1200px 800px at 50% -200px, #2e346e33, transparent 50%),
+      linear-gradient(180deg, var(--bg-1), var(--bg-2));
+    overflow-x:hidden;
+  }
+  /* Stars layer */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background:
+      radial-gradient(1px 1px at 10% 20%, #fff8, transparent 40%),
+      radial-gradient(1px 1px at 80% 30%, #fff8, transparent 40%),
+      radial-gradient(1px 1px at 50% 80%, #fff8, transparent 40%),
+      radial-gradient(1px 1px at 20% 60%, #fff8, transparent 40%),
+      radial-gradient(1px 1px at 70% 70%, #fff8, transparent 40%),
+      radial-gradient(1px 1px at 30% 30%, #fff8, transparent 40%),
+      radial-gradient(1px 1px at 90% 50%, #fff8, transparent 40%);
+    opacity:.25;
+    pointer-events:none;
+  }
+
+  .app{
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  header.hero{
+    text-align:center;
+    padding: 14px 0 8px;
+  }
+  .subtitle{
+    color:var(--muted);
+    font-size: 14px;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  h1{
+    margin:.25rem 0 .5rem;
+    font-size: clamp(26px, 4vw, 42px);
+    line-height: 1.1;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--accent), #fff);
+    -webkit-background-clip: text;
+    background-clip: text; color: transparent;
+  }
+
+  .houses-strip{
+    display:flex;
+    justify-content:center;
+    gap:12px;
+    flex-wrap:wrap;
+    margin: 10px auto 18px;
+  }
+
+  .crest{
+    --c1:var(--accent);
+    --c2:var(--accent-2);
+    width:120px; aspect-ratio: 5/6;
+    position:relative;
+    border-radius: 14px;
+    background: linear-gradient(135deg, color-mix(in oklab, var(--c1) 60%, #000 40%), color-mix(in oklab, var(--c2) 60%, #000 40%));
+    box-shadow:
+      inset 0 0 0 3px #ffffff18,
+      0 8px 16px #00000060;
+    display:grid; place-items:center;
+    overflow:hidden;
+    clip-path: polygon(15% 0, 85% 0, 100% 18%, 100% 65%, 50% 100%, 0 65%, 0 18%);
+    transition: transform .2s ease;
+  }
+  .crest:hover{ transform: translateY(-3px); }
+  .crest .emoji{
+    font-size: 44px;
+    filter: drop-shadow(0 4px 8px #000a);
+  }
+  .crest .label{
+    position:absolute; bottom:6px; left:0; right:0;
+    text-align:center; font-size:12px; letter-spacing:.06em; opacity:.85;
+    text-shadow: 0 1px 0 #0009;
+  }
+
+  .crest-gry{ --c1: var(--gry-a); --c2: var(--gry-b); }
+  .crest-sly{ --c1: var(--sly-a); --c2: var(--sly-b); }
+  .crest-rav{ --c1: var(--rav-a); --c2: var(--rav-b); }
+  .crest-huf{ --c1: var(--huf-a); --c2: var(--huf-b); }
+
+  /* Card */
+  .card{
+    background: linear-gradient(180deg, color-mix(in oklab, var(--card) 80%, #fff 5%), var(--card-2));
+    border:1px solid #ffffff10;
+    border-radius: 18px;
+    box-shadow: 0 20px 50px #0000006a, inset 0 1px 0 #ffffff0a;
+  }
+  .card.padded{ padding: 22px; }
+
+  /* Start Section */
+  section{ display:none; }
+  section.active{ display:block; }
+
+  .start-grid{
+    display:grid; gap:16px; grid-template-columns: 1.15fr .85fr;
+  }
+  @media (max-width: 900px){ .start-grid{ grid-template-columns: 1fr; } }
+
+  .start-left{ padding:18px; }
+  .start-right{ padding:16px; }
+
+  .blurb{
+    color:var(--muted);
+    font-size: 16px; line-height: 1.6;
+    margin: 12px 0 24px;
+  }
+
+  .input-row{
+    display:flex; gap:10px; flex-wrap:wrap;
+    margin: 10px 0 4px;
+  }
+  .input{
+    flex:1 1 220px;
+    display:flex; align-items:center; gap:10px;
+    background:#0f1330;
+    border:1px solid #ffffff12;
+    padding: 10px 12px; border-radius: 12px;
+    color:var(--text);
+  }
+  .input input{
+    border:none; outline:none; background:transparent; color:inherit;
+    width:100%; font-size: 16px;
+  }
+
+  .btn{
+    --b1: var(--theme-a);
+    --b2: var(--theme-b);
+    appearance:none; border:none; outline:none; cursor:pointer;
+    padding: 12px 16px; border-radius: 12px;
+    color:#0b0e1a; font-weight: 800; letter-spacing: .02em;
+    background: linear-gradient(135deg, var(--b1), var(--b2));
+    box-shadow: 0 6px 16px color-mix(in oklab, var(--b1) 30%, #000 70%);
+    transition: transform .08s ease, box-shadow .2s ease, filter .2s ease;
+  }
+  .btn:hover{ transform: translateY(-1px); filter: brightness(1.05); }
+  .btn:active{ transform: translateY(1px); }
+
+  .btn.secondary{
+    background: #0b0f22; color: var(--accent);
+    border:1px solid #ffffff14;
+    box-shadow: none;
+  }
+
+  .note{
+    font-size: 12px; color: var(--muted);
+    opacity:.85; margin-top:8px;
+  }
+
+  /* Quiz */
+  .quiz-head{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding: 14px 16px 0;
+  }
+  .progress-wrap{
+    width:100%; background:#0c1025; border:1px solid #ffffff12;
+    border-radius: 10px; height: 10px; overflow:hidden;
+  }
+  .progress-bar{
+    height:100%; width:0%;
+    background: linear-gradient(90deg, var(--theme-a), var(--theme-b));
+    transition: width .4s ease;
+  }
+  .q-counter{ font-size: 13px; color:var(--muted); min-width:102px; text-align:right; }
+
+  .q-card{ padding: 22px; margin: 14px; }
+  .q-text{ font-size: clamp(18px, 2.8vw, 26px); font-weight: 750; line-height: 1.2; margin: 8px 0 18px; }
+  .options{
+    display:grid; gap: 12px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width:720px){ .options{ grid-template-columns: 1fr; } }
+
+  .option{
+    display:flex; align-items:center; gap:12px; text-align:left;
+    padding: 14px; border-radius: 14px;
+    background: #0f1330;
+    border:1px solid #ffffff12;
+    color:var(--text);
+    cursor:pointer;
+    transition: transform .06s ease, border-color .15s ease, background .2s ease;
+  }
+  .option:hover{ transform: translateY(-1px); border-color:#ffffff25; background:#141a3d; }
+  .option:active{ transform: translateY(1px); }
+  .o-emoji{ font-size: 20px; }
+  .o-text{ font-size: 16px; line-height:1.3; }
+
+  /* Result */
+  .result-wrap{ padding: 18px; }
+  .winner{
+    display:grid; grid-template-columns: 280px 1fr; gap:18px; align-items:stretch;
+  }
+  @media (max-width: 940px){ .winner{ grid-template-columns: 1fr; } }
+
+  .winner-crest{
+    display:grid; place-items:center;
+    padding: 12px;
+  }
+  .big-crest{
+    width: 260px; aspect-ratio:1/1;
+    border-radius: 30px;
+    background: radial-gradient(60% 60% at 50% 35%, #ffffff10, transparent 60%), linear-gradient(135deg, var(--theme-a), var(--theme-b));
+    box-shadow: inset 0 0 0 6px #ffffff20, 0 30px 60px #0008;
+    display:grid; place-items:center; position:relative; overflow:hidden;
+    clip-path: polygon(18% 3%, 82% 3%, 97% 20%, 97% 65%, 50% 100%, 3% 65%, 3% 20%);
+  }
+  .big-crest .emoji{
+    font-size: 110px; filter: drop-shadow(0 10px 12px #0009);
+    transform: translateY(2px);
+  }
+  .big-crest .ring{
+    position:absolute; inset:16px;
+    border-radius: 26px;
+    border: 3px dashed #ffffff2a;
+    clip-path: polygon(18% 0, 82% 0, 100% 18%, 100% 65%, 50% 100%, 0 65%, 0 18%);
+  }
+
+  .winner-info{
+    padding: 12px 6px;
+  }
+  .pill{
+    display:inline-flex; align-items:center; gap:8px;
+    color:#0b0f22; font-weight:800; letter-spacing:.02em;
+    background: linear-gradient(135deg, var(--theme-a), var(--theme-b));
+    padding: 8px 12px; border-radius: 999px; font-size: 13px;
+    box-shadow: 0 6px 16px color-mix(in oklab, var(--theme-a) 30%, #000 70%);
+  }
+  .winner-title{
+    font-size: clamp(22px, 3vw, 36px); font-weight: 900; margin: 12px 0 8px;
+  }
+  .winner-desc{ color: var(--muted); font-size: 16px; line-height: 1.6; }
+
+  .traits{
+    display:flex; flex-wrap:wrap; gap:8px; margin: 10px 0 6px;
+  }
+  .trait{
+    border:1px dashed #ffffff22; color: #d8defb;
+    background: #0e1330; padding: 6px 10px; border-radius: 999px; font-size: 13px;
+  }
+
+  .breakdown{
+    margin-top: 16px;
+    padding: 16px; border-radius: 14px;
+    background:#0f1330; border:1px solid #ffffff10;
+  }
+
+  .bar{
+    display:flex; align-items:center; gap:10px;
+    margin: 8px 0;
+  }
+  .bar .name{ width: 110px; color:#cfd6ff; font-weight: 700; }
+  .bar .track{
+    position:relative; flex: 1 1 auto; height: 12px; background:#0b0f22; border:1px solid #ffffff14; border-radius: 9px; overflow:hidden;
+  }
+  .bar .fill{
+    position:absolute; inset:0 auto 0 0; width: 0%;
+    background: linear-gradient(90deg, var(--c1), var(--c2));
+    transition: width .8s ease;
+  }
+  .bar .pct{ width: 54px; text-align:right; color:var(--muted); font-size: 13px; }
+
+  .actions{
+    display:flex; flex-wrap:wrap; gap:10px; margin-top:14px;
+  }
+
+  /* Confetti Canvas */
+  #confetti{
+    position: fixed; inset:0; pointer-events:none; z-index: 10;
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    .crest, .option, .btn{ transition:none !important; }
+    .progress-bar, .bar .fill{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<div class="app" role="application" aria-label="Hogwarts Sorting Quiz">
+
+  <header class="hero">
+    <div class="subtitle">Unofficial fan-made quiz</div>
+    <h1>Which Hogwarts House Do You Belong To?</h1>
+    <div class="houses-strip">
+      <div class="crest crest-gry" title="Gryffindor">
+        <div class="emoji" aria-hidden="true">🦁</div>
+        <div class="label">Gryffindor</div>
+      </div>
+      <div class="crest crest-sly" title="Slytherin">
+        <div class="emoji" aria-hidden="true">🐍</div>
+        <div class="label">Slytherin</div>
+      </div>
+      <div class="crest crest-rav" title="Ravenclaw">
+        <div class="emoji" aria-hidden="true">🦅</div>
+        <div class="label">Ravenclaw</div>
+      </div>
+      <div class="crest crest-huf" title="Hufflepuff">
+        <div class="emoji" aria-hidden="true">🦡</div>
+        <div class="label">Hufflepuff</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- START -->
+  <section id="start" class="active">
+    <div class="start-grid">
+      <div class="card padded start-left">
+        <div class="blurb">
+          Take a fresh, randomized sorting quiz each time. Answer honestly—there are no right or wrong choices. We’ll reveal your strongest match and show how close the others were.
+        </div>
+        <div class="input-row">
+          <label class="input" aria-label="Your name">
+            <span>🪪</span>
+            <input id="nameInput" type="text" inputmode="text" placeholder="Enter your name (optional)" />
+          </label>
+          <button id="startBtn" class="btn" aria-label="Begin quiz">
+            ✨ Begin the Sorting
+          </button>
+        </div>
+        <div class="note">Questions and options are shuffled. No data is stored.</div>
+      </div>
+
+      <div class="card padded start-right">
+        <div style="font-weight:800; margin-bottom:8px;">House icons and colors</div>
+        <div style="display:grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap:10px;">
+          <div class="crest crest-gry">
+            <div class="emoji">🦁</div>
+            <div class="label">Gryffindor</div>
+          </div>
+          <div class="crest crest-sly">
+            <div class="emoji">🐍</div>
+            <div class="label">Slytherin</div>
+          </div>
+          <div class="crest crest-rav">
+            <div class="emoji">🦅</div>
+            <div class="label">Ravenclaw</div>
+          </div>
+          <div class="crest crest-huf">
+            <div class="emoji">🦡</div>
+            <div class="label">Hufflepuff</div>
+          </div>
+        </div>
+        <div class="note" style="margin-top:10px;">
+          This quiz is for fun. It’s not affiliated with Warner Bros. or J.K. Rowling.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- QUIZ -->
+  <section id="quiz">
+    <div class="quiz-head">
+      <div class="progress-wrap" aria-hidden="false" aria-label="Progress">
+        <div id="progressBar" class="progress-bar"></div>
+      </div>
+      <div class="q-counter" id="qCounter">Question 1/10</div>
+    </div>
+    <div class="card q-card" role="group" aria-labelledby="qText">
+      <div id="qText" class="q-text">Question text</div>
+      <div id="options" class="options"></div>
+    </div>
+  </section>
+
+  <!-- RESULT -->
+  <section id="result">
+    <div class="card result-wrap">
+      <div class="winner">
+        <div class="winner-crest">
+          <div class="big-crest" aria-hidden="true">
+            <div id="winEmoji" class="emoji">🦁</div>
+            <div class="ring"></div>
+          </div>
+        </div>
+        <div class="winner-info">
+          <div id="winPill" class="pill">Your strongest match</div>
+          <div id="winTitle" class="winner-title">Gryffindor</div>
+          <div id="winDesc" class="winner-desc">
+            You’re brave, daring, and protective—you act when it matters and stand up for others.
+          </div>
+
+          <div class="traits" id="traits"></div>
+
+          <div class="breakdown">
+            <div style="font-weight:800; margin-bottom:6px;">Your house breakdown</div>
+            <div class="bar">
+              <div class="name">Gryffindor</div>
+              <div class="track">
+                <div id="barGry" class="fill" style="--c1:var(--gry-a); --c2:var(--gry-b)"></div>
+              </div>
+              <div id="pctGry" class="pct">0%</div>
+            </div>
+            <div class="bar">
+              <div class="name">Slytherin</div>
+              <div class="track">
+                <div id="barSly" class="fill" style="--c1:var(--sly-a); --c2:var(--sly-b)"></div>
+              </div>
+              <div id="pctSly" class="pct">0%</div>
+            </div>
+            <div class="bar">
+              <div class="name">Ravenclaw</div>
+              <div class="track">
+                <div id="barRav" class="fill" style="--c1:var(--rav-a); --c2:var(--rav-b)"></div>
+              </div>
+              <div id="pctRav" class="pct">0%</div>
+            </div>
+            <div class="bar">
+              <div class="name">Hufflepuff</div>
+              <div class="track">
+                <div id="barHuf" class="fill" style="--c1:var(--huf-a); --c2:var(--huf-b)"></div>
+              </div>
+              <div id="pctHuf" class="pct">0%</div>
+            </div>
+            <div id="tieNote" class="note" style="margin-top:6px;"></div>
+          </div>
+
+          <div class="actions">
+            <button id="retryBtn" class="btn">🔁 Retake quiz</button>
+            <button id="shareBtn" class="btn secondary">🔗 Share result</button>
+            <button id="viewBreakdownBtn" class="btn secondary">📊 View breakdown</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+(function(){
+  // House definitions
+  const HOUSES = {
+    Gryffindor: {
+      key: 'Gryffindor', emoji: '🦁', c1:'var(--gry-a)', c2:'var(--gry-b)',
+      traits: ['Bravery', 'Daring', 'Chivalry', 'Leadership'],
+      desc: "You’re brave, daring, and protective. You act when it matters, stand up for others, and lead by example.",
+    },
+    Slytherin: {
+      key: 'Slytherin', emoji: '🐍', c1:'var(--sly-a)', c2:'var(--sly-b)',
+      traits: ['Ambition', 'Cunning', 'Resourcefulness', 'Determination'],
+      desc: "You’re ambitious and resourceful with sharp instincts. You set bold goals and find clever ways to reach them.",
+    },
+    Ravenclaw: {
+      key: 'Ravenclaw', emoji: '🦅', c1:'var(--rav-a)', c2:'var(--rav-b)',
+      traits: ['Intellect', 'Creativity', 'Curiosity', 'Wit'],
+      desc: "You’re curious, thoughtful, and original. You love ideas, ask why, and craft elegant solutions.",
+    },
+    Hufflepuff: {
+      key: 'Hufflepuff', emoji: '🦡', c1:'var(--huf-a)', c2:'var(--huf-b)',
+      traits: ['Kindness', 'Patience', 'Loyalty', 'Hard Work'],
+      desc: "You’re kind, patient, and steady. You value fairness and community—people rely on your warmth and grit.",
+    },
+  };
+
+  // Question bank (options map to houses)
+  const BANK = [
+    {
+      q: "Which quality do you value most?",
+      a: [
+        {t:"Courage", h:"Gryffindor"},
+        {t:"Ambition", h:"Slytherin"},
+        {t:"Intelligence", h:"Ravenclaw"},
+        {t:"Loyalty", h:"Hufflepuff"},
+      ],
+      icons: ["🗡️","🏆","🧠","🤝"]
+    },
+    {
+      q: "A corridor is blocked and you’re late—what do you do?",
+      a: [
+        {t:"Take a risky shortcut", h:"Gryffindor"},
+        {t:"Charm your way through", h:"Slytherin"},
+        {t:"Calculate the fastest detour", h:"Ravenclaw"},
+        {t:"Wait; safety first", h:"Hufflepuff"},
+      ],
+      icons: ["🧭","🪄","🧮","🛟"]
+    },
+    {
+      q: "Choose a creature to befriend:",
+      a: [
+        {t:"Phoenix", h:"Gryffindor"},
+        {t:"Serpent", h:"Slytherin"},
+        {t:"Owl", h:"Ravenclaw"},
+        {t:"Badger", h:"Hufflepuff"},
+      ],
+      icons: ["🔥","🐍","🦉","🦡"]
+    },
+    {
+      q: "Your ideal weekend looks like...",
+      a: [
+        {t:"Exploring somewhere new", h:"Gryffindor"},
+        {t:"Working on a big personal goal", h:"Slytherin"},
+        {t:"Reading, tinkering, inventing", h:"Ravenclaw"},
+        {t:"Relaxing with friends and baking", h:"Hufflepuff"},
+      ],
+      icons: ["🗺️","🎯","🔧","🍪"]
+    },
+    {
+      q: "In a team, you are the...",
+      a: [
+        {t:"Motivator who rallies everyone", h:"Gryffindor"},
+        {t:"Strategist who secures the win", h:"Slytherin"},
+        {t:"Researcher and idea engine", h:"Ravenclaw"},
+        {t:"Organizer who ensures all are included", h:"Hufflepuff"},
+      ],
+      icons: ["📣","♟️","📚","📋"]
+    },
+    {
+      q: "A rule stands in your way—what now?",
+      a: [
+        {t:"Break it for the right reasons", h:"Gryffindor"},
+        {t:"Find a clever loophole", h:"Slytherin"},
+        {t:"Propose a smarter rule", h:"Ravenclaw"},
+        {t:"Follow it—rules keep things fair", h:"Hufflepuff"},
+      ],
+      icons: ["🚧","🕳️","🧠","⚖️"]
+    },
+    {
+      q: "Pick an element:",
+      a: [
+        {t:"Fire", h:"Gryffindor"},
+        {t:"Water", h:"Slytherin"},
+        {t:"Air", h:"Ravenclaw"},
+        {t:"Earth", h:"Hufflepuff"},
+      ],
+      icons: ["🔥","💧","💨","⛰️"]
+    },
+    {
+      q: "Choose a color palette:",
+      a: [
+        {t:"Scarlet & Gold", h:"Gryffindor"},
+        {t:"Emerald & Silver", h:"Slytherin"},
+        {t:"Blue & Bronze", h:"Ravenclaw"},
+        {t:"Yellow & Charcoal", h:"Hufflepuff"},
+      ],
+      icons: ["🟥","🟩","🟦","🟨"]
+    },
+    {
+      q: "Facing a bully, you...",
+      a: [
+        {t:"Stand up immediately", h:"Gryffindor"},
+        {t:"Outsmart them with a plan", h:"Slytherin"},
+        {t:"Dismantle their argument calmly", h:"Ravenclaw"},
+        {t:"Support the target and get help", h:"Hufflepuff"},
+      ],
+      icons: ["🛡️","🧩","🗣️","🤝"]
+    },
+    {
+      q: "Choose a magical artifact:",
+      a: [
+        {t:"Sword", h:"Gryffindor"},
+        {t:"Signet ring", h:"Slytherin"},
+        {t:"Diadem", h:"Ravenclaw"},
+        {t:"Goblet", h:"Hufflepuff"},
+      ],
+      icons: ["🗡️","💍","👑","🏆"]
+    },
+    {
+      q: "How do you study?",
+      a: [
+        {t:"Dive in and practice relentlessly", h:"Gryffindor"},
+        {t:"Focus on what maximizes results", h:"Slytherin"},
+        {t:"Map concepts and ask why", h:"Ravenclaw"},
+        {t:"Make a checklist and pace yourself", h:"Hufflepuff"},
+      ],
+      icons: ["💥","📈","🧭","✅"]
+    },
+    {
+      q: "Pick a door:",
+      a: [
+        {t:"Roaring torchlight", h:"Gryffindor"},
+        {t:"Emerald scales", h:"Slytherin"},
+        {t:"Carved runes", h:"Ravenclaw"},
+        {t:"Warm hearth and laughter", h:"Hufflepuff"},
+      ],
+      icons: ["🔥","🧪","🔤","🏡"]
+    },
+    {
+      q: "Favorite pastime?",
+      a: [
+        {t:"Quests and sports", h:"Gryffindor"},
+        {t:"Leading clubs and networking", h:"Slytherin"},
+        {t:"Puzzles and art", h:"Ravenclaw"},
+        {t:"Gardening and volunteering", h:"Hufflepuff"},
+      ],
+      icons: ["🏹","🗂️","🧩","🌿"]
+    },
+    {
+      q: "Plans change last minute—your move?",
+      a: [
+        {t:"Adapt and charge ahead", h:"Gryffindor"},
+        {t:"Pivot to still hit the goal", h:"Slytherin"},
+        {t:"Reframe with logic and data", h:"Ravenclaw"},
+        {t:"Check in so the team’s okay", h:"Hufflepuff"},
+      ],
+      icons: ["🏃‍♂️","🔀","📊","🫶"]
+    },
+    {
+      q: "Your greatest strength:",
+      a: [
+        {t:"Boldness", h:"Gryffindor"},
+        {t:"Drive", h:"Slytherin"},
+        {t:"Curiosity", h:"Ravenclaw"},
+        {t:"Kindness", h:"Hufflepuff"},
+      ],
+      icons: ["🦾","🚀","🔍","💛"]
+    },
+    {
+      q: "Your biggest hurdle:",
+      a: [
+        {t:"Recklessness", h:"Gryffindor"},
+        {t:"Over-competitiveness", h:"Slytherin"},
+        {t:"Overthinking", h:"Ravenclaw"},
+        {t:"Saying yes too often", h:"Hufflepuff"},
+      ],
+      icons: ["🤕","🥵","🌀","🤹‍♀️"]
+    },
+  ];
+
+  const QUESTIONS_COUNT = 10;
+
+  // State
+  let name = '';
+  let scores = {};
+  let quiz = [];
+  let step = 0;
+
+  // Elements
+  const startSection = document.getElementById('start');
+  const quizSection  = document.getElementById('quiz');
+  const resultSection= document.getElementById('result');
+
+  const nameInput = document.getElementById('nameInput');
+  const startBtn  = document.getElementById('startBtn');
+
+  const qText = document.getElementById('qText');
+  const optionsEl = document.getElementById('options');
+  const progressBar = document.getElementById('progressBar');
+  const qCounter = document.getElementById('qCounter');
+
+  const winEmoji = document.getElementById('winEmoji');
+  const winPill = document.getElementById('winPill');
+  const winTitle = document.getElementById('winTitle');
+  const winDesc = document.getElementById('winDesc');
+  const traitsEl = document.getElementById('traits');
+  const tieNote = document.getElementById('tieNote');
+
+  const barGry = document.getElementById('barGry');
+  const barSly = document.getElementById('barSly');
+  const barRav = document.getElementById('barRav');
+  const barHuf = document.getElementById('barHuf');
+  const pctGry = document.getElementById('pctGry');
+  const pctSly = document.getElementById('pctSly');
+  const pctRav = document.getElementById('pctRav');
+  const pctHuf = document.getElementById('pctHuf');
+
+  const retryBtn = document.getElementById('retryBtn');
+  const shareBtn = document.getElementById('shareBtn');
+  const viewBreakdownBtn = document.getElementById('viewBreakdownBtn');
+
+  // Utility
+  const shuffle = arr => {
+    for(let i=arr.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
+
+  function pickRandomQuestions(){
+    const copy = [...BANK];
+    shuffle(copy);
+    const selected = copy.slice(0, QUESTIONS_COUNT).map(item => {
+      const opts = item.a.map((opt, idx) => ({...opt, icon: item.icons?.[idx] || '✨'}));
+      return { q: item.q, a: shuffle(opts) };
+    });
+    return selected;
+  }
+
+  function resetScores(){
+    scores = {Gryffindor:0, Slytherin:0, Ravenclaw:0, Hufflepuff:0};
+  }
+
+  function show(section){
+    for(const el of [startSection, quizSection, resultSection]){
+      el.classList.remove('active');
+    }
+    section.classList.add('active');
+  }
+
+  function startQuiz(){
+    name = (nameInput.value || '').trim();
+    resetScores();
+    quiz = pickRandomQuestions();
+    step = 0;
+    setTheme('var(--accent)', 'var(--accent-2)'); // reset theme colors
+    renderQuestion();
+    show(quizSection);
+  }
+
+  function renderQuestion(){
+    const { q, a } = quiz[step];
+    qText.textContent = q;
+    optionsEl.innerHTML = '';
+
+    a.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'option';
+      btn.setAttribute('aria-label', opt.t);
+      btn.innerHTML = `
+        <div class="o-emoji">${opt.icon || '✨'}</div>
+        <div class="o-text">${opt.t}</div>
+      `;
+      btn.addEventListener('click', () => choose(opt.h));
+      optionsEl.appendChild(btn);
+    });
+
+    const prog = ((step) / quiz.length) * 100;
+    progressBar.style.width = `${prog}%`;
+    qCounter.textContent = `Question ${step+1}/${quiz.length}`;
+  }
+
+  function choose(house){
+    scores[house] = (scores[house] || 0) + 1;
+
+    // Small delay for click feel
+    setTimeout(() => {
+      step++;
+      if(step < quiz.length){
+        renderQuestion();
+      } else {
+        finish();
+      }
+    }, 120);
+  }
+
+  function finish(){
+    // Calculate winner and build result
+    const entries = Object.entries(scores);
+    const total = entries.reduce((a,[,v]) => a+v, 0);
+
+    const max = Math.max(...entries.map(([,v])=>v));
+    const top = entries.filter(([,v]) => v === max).map(([k])=>k);
+    const primary = top[Math.floor(Math.random()*top.length)]; // tiebreaker by random among top
+    const house = HOUSES[primary];
+
+    setTheme(house.c1, house.c2);
+
+    // Winner content
+    winEmoji.textContent = house.emoji;
+    const displayName = name ? `${name}, y` : 'Y';
+    winPill.textContent = `${displayName}our strongest match`;
+    winTitle.textContent = primary;
+    winDesc.textContent = house.desc;
+
+    traitsEl.innerHTML = '';
+    house.traits.forEach(t => {
+      const tag = document.createElement('div');
+      tag.className = 'trait';
+      tag.textContent = t;
+      traitsEl.appendChild(tag);
+    });
+
+    // Breakdown bars
+    const pct = (n) => total ? Math.round(n/total*100) : 0;
+    const setBar = (elFill, elPct, val) => {
+      const percent = pct(val);
+      elFill.style.width = '0%'; // reset animation
+      requestAnimationFrame(() => {
+        elFill.style.width = `${percent}%`;
+      });
+      elPct.textContent = `${percent}%`;
+    };
+
+    setBar(barGry, pctGry, scores.Gryffindor);
+    setBar(barSly, pctSly, scores.Slytherin);
+    setBar(barRav, pctRav, scores.Ravenclaw);
+    setBar(barHuf, pctHuf, scores.Hufflepuff);
+
+    // Tie note
+    if(top.length > 1){
+      const others = top.filter(h => h !== primary);
+      const andList = others.length === 1 ? others[0] : `${others.slice(0,-1).join(', ')} and ${others.slice(-1)}`;
+      tieNote.textContent = `It was very close with ${andList}.`;
+    } else {
+      tieNote.textContent = '';
+    }
+
+    show(resultSection);
+    confettiBurst();
+  }
+
+  function setTheme(c1, c2){
+    document.documentElement.style.setProperty('--theme-a', c1);
+    document.documentElement.style.setProperty('--theme-b', c2);
+  }
+
+  // Confetti
+  const canvas = document.getElementById('confetti');
+  const ctx = canvas.getContext('2d');
+  let confetti = [];
+  let rafId = null;
+
+  function resizeCanvas(){
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  window.addEventListener('resize', resizeCanvas);
+  resizeCanvas();
+
+  function confettiBurst(){
+    confetti = [];
+    const colors = [
+      cssVar('--gry-a'), cssVar('--gry-b'),
+      cssVar('--sly-a'), cssVar('--sly-b'),
+      cssVar('--rav-a'), cssVar('--rav-b'),
+      cssVar('--huf-a'), cssVar('--huf-b')
+    ];
+    const count = Math.min(160, Math.floor((window.innerWidth * window.innerHeight) / 9000));
+    for(let i=0;i<count;i++){
+      confetti.push({
+        x: Math.random()*window.innerWidth,
+        y: -20 - Math.random()*100,
+        r: 3 + Math.random()*5,
+        c: colors[Math.floor(Math.random()*colors.length)],
+        a: Math.random()*Math.PI*2,
+        v: 2 + Math.random()*3,
+        w: -0.05 + Math.random()*0.1,
+        s: Math.random() < .5 ? 'rect' : 'circle'
+      });
+    }
+
+    if(rafId) cancelAnimationFrame(rafId);
+    let t = 0;
+    (function loop(){
+      rafId = requestAnimationFrame(loop);
+      t += 1/60;
+      ctx.clearRect(0,0,canvas.width, canvas.height);
+
+      confetti.forEach(p=>{
+        p.y += p.v;
+        p.x += Math.sin((p.y + p.a) / 15) * 0.9;
+        p.a += p.w;
+
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.a);
+        ctx.fillStyle = p.c;
+        if(p.s==='rect'){
+          ctx.fillRect(-p.r, -p.r, p.r*2, p.r*2*0.6);
+        } else {
+          ctx.beginPath();
+          ctx.arc(0,0,p.r,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+
+      // stop after 3 seconds
+      if(t > 3){
+        cancelAnimationFrame(rafId);
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+      }
+    })();
+  }
+
+  function cssVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+
+  // Share
+  async function shareResult(){
+    const entries = Object.entries(scores);
+    const total = entries.reduce((a,[,v]) => a+v, 0) || 1;
+    const pct = (n) => Math.round(n/total*100);
+    const leaderboard =
+      `Gryffindor ${pct(scores.Gryffindor)}% · `+
+      `Slytherin ${pct(scores.Slytherin)}% · `+
+      `Ravenclaw ${pct(scores.Ravenclaw)}% · `+
+      `Hufflepuff ${pct(scores.Hufflepuff)}%`;
+
+    const title = 'My Hogwarts House result';
+    const text = `${name ? name+"'s" : "My"} Sorting Quiz: ${topHouse()} (${leaderboard})`;
+
+    try{
+      if(navigator.share){
+        await navigator.share({ title, text });
+      } else {
+        await navigator.clipboard.writeText(`${title}\n${text}`);
+        shareBtn.textContent = '✅ Copied to clipboard';
+        setTimeout(()=> shareBtn.textContent = '🔗 Share result', 1400);
+      }
+    } catch(e){
+      // ignore cancellation
+    }
+  }
+
+  function topHouse(){
+    const entries = Object.entries(scores);
+    const max = Math.max(...entries.map(([,v])=>v));
+    const top = entries.filter(([,v]) => v === max).map(([k])=>k);
+    return top[0] || 'House';
+  }
+
+  // Actions
+  startBtn.addEventListener('click', startQuiz);
+  retryBtn.addEventListener('click', startQuiz);
+  shareBtn.addEventListener('click', shareResult);
+  viewBreakdownBtn.addEventListener('click', () => {
+    document.querySelector('.breakdown').scrollIntoView({ behavior:'smooth', block:'center' });
+  });
+
+  // Keyboard: Enter to start, 1-4 to pick option during quiz
+  document.addEventListener('keydown', (e)=>{
+    if(startSection.classList.contains('active') && (e.key === 'Enter')){
+      startQuiz();
+    }
+    if(quizSection.classList.contains('active')){
+      const idx = ['1','2','3','4'].indexOf(e.key);
+      if(idx>-1){
+        const btn = optionsEl.querySelectorAll('.option')[idx];
+        if(btn) btn.click();
+      }
+    }
+  });
+
+  // Initialize theme
+  setTheme('var(--accent)', 'var(--accent-2)');
+})();
+</script>
+</body>
+</html>
